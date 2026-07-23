@@ -1,8 +1,10 @@
-from django.contrib.auth import login
+from django.contrib.auth import login,logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import redirect, render
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 
-from .forms import RegisterForm
+from .forms import ProfileForm
 
 
 def login_view(request):
@@ -49,6 +51,45 @@ def register_view(request):
     return render(
         request,
         "accounts/register.html",
+        {
+            "form": form,
+        },
+    )
+
+def logout_view(request):
+    logout(request)
+    return redirect("home")
+
+@login_required
+def profile_view(request):
+
+    if request.method == "POST":
+
+        form = ProfileForm(
+            request.POST,
+            request.FILES,
+            instance=request.user,
+        )
+
+        if form.is_valid():
+            form.save()
+
+            messages.success(
+                request,
+                "Profile updated successfully."
+            )
+
+            return redirect("profile-page")
+
+    else:
+
+        form = ProfileForm(
+            instance=request.user,
+        )
+
+    return render(
+        request,
+        "accounts/profile.html",
         {
             "form": form,
         },

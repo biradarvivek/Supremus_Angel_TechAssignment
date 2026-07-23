@@ -44,9 +44,45 @@
             {{ product.description }}
         </p>
 
-        <button class="btn btn-success">
-            Add to Cart
-        </button>
+        <form
+    method="POST"
+    action="{% url 'add-to-cart-page' product.id %}"
+>
+
+    {% csrf_token %}
+
+    <div class="row mb-3">
+
+        <div class="col-md-4">
+
+            <label class="form-label">
+
+                Quantity
+
+            </label>
+
+            <input
+                type="number"
+                name="quantity"
+                value="1"
+                min="1"
+                max="{{ product.stock }}"
+                class="form-control"
+            >
+
+        </div>
+
+    </div>
+
+    <button
+        class="btn btn-success btn-lg"
+    >
+        <i class="bi bi-cart-plus"></i>
+
+        Add To Cart
+    </button>
+
+</form>
 
     </div>
 

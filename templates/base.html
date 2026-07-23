@@ -90,34 +90,71 @@
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link position-relative" href="{% url 'cart' %}">
+                    <a class="nav-link position-relative" href="{% url 'cart-page' %}">
                         <i class="bi bi-cart3 fs-5"></i>
 
+                       {% if cart_count > 0 %}
                         <span
                             class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
                         >
-                            0
+                            {{ cart_count }}
                         </span>
+                        {% endif %}
                     </a>
                 </li>
 
                 <li class="nav-item dropdown">
 
-                    <a
-                        class="nav-link dropdown-toggle"
-                        href="#"
-                        data-bs-toggle="dropdown"
-                    >
-                        <i class="bi bi-person-circle"></i>
-                        Account
-                    </a>
+                <a
+                    class="nav-link dropdown-toggle"
+                    href="#"
+                    data-bs-toggle="dropdown"
+                >
+                    <i class="bi bi-person-circle"></i>
 
-                    <ul class="dropdown-menu dropdown-menu-end">
+                    {% if user.is_authenticated %}
+                        {{ user.username }}
+                    {% else %}
+                        Account
+                    {% endif %}
+                </a>
+
+                <ul class="dropdown-menu dropdown-menu-end">
+
+                    {% if user.is_authenticated %}
 
                         <li>
                             <a
                                 class="dropdown-item"
-                                href="{% url 'login' %}"
+                                href="{% url 'order-history-page' %}"
+                            >
+                                My Orders
+                            </a>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item" href="{% url 'profile-page' %}">
+                                Profile
+                            </a>
+                        </li>
+
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li>
+                            <a
+                                class="dropdown-item text-danger"
+                                href="{% url 'logout-page' %}"
+                            >
+                                Logout
+                            </a>
+                        </li>
+
+                    {% else %}
+
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="{% url 'login-page' %}"
                             >
                                 Login
                             </a>
@@ -126,44 +163,17 @@
                         <li>
                             <a
                                 class="dropdown-item"
-                                href="{% url 'register' %}"
+                                href="{% url 'register-page' %}"
                             >
                                 Register
                             </a>
                         </li>
 
-                        <li><hr class="dropdown-divider"></li>
+                    {% endif %}
 
-                        <li>
-                            <a
-                                class="dropdown-item"
-                                href="#"
-                            >
-                                My Orders
-                            </a>
-                        </li>
+                </ul>
 
-                        <li>
-                            <a
-                                class="dropdown-item"
-                                href="#"
-                            >
-                                Profile
-                            </a>
-                        </li>
-
-                        <li>
-                            <a
-                                class="dropdown-item text-danger"
-                                href="#"
-                            >
-                                Logout
-                            </a>
-                        </li>
-
-                    </ul>
-
-                </li>
+            </li>
 
             </ul>
 
@@ -175,6 +185,24 @@
 <!-- ================= CONTENT ================= -->
 
 <div class="container my-5">
+    {% if messages %}
+
+    {% for message in messages %}
+
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+
+            {{ message }}
+
+            <button
+                class="btn-close"
+                data-bs-dismiss="alert">
+            </button>
+
+        </div>
+
+    {% endfor %}
+
+{% endif %}
 
     {% block content %}
 
@@ -209,6 +237,8 @@
 
 <!-- Custom JS -->
 <script src="{% static 'js/script.js' %}"></script>
+{% block scripts %}
+{% endblock %}
 
 </body>
 </html>

@@ -1,103 +1,114 @@
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from django.shortcuts import redirect, render, get_object_or_404
 
-from rest_framework import generics, permissions, status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
-from cart.models import Cart, CartItem
-
+from cart.models import Cart
 from .models import Order, OrderItem
-from .serializers import (
-    CheckoutSerializer,
-    OrderSerializer,
-)
 
-class CheckoutView(APIView):
+@login_required
+def checkout_page(request):
 
-    permission_classes = [permissions.IsAuthenticated]
+    cart = Cart.objects.filter(
+        user=request.user
+    ).prefetch_related(
+        "items__product"
+    ).first()
 
-    @transaction.atomic
-    def post(self, request):
+    if not cart or not cart.items.exists():
+        messages.warning(request, "Your cart is empty.")
+        return redirect("cart-page")
 
-        serializer = CheckoutSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    total = sum(item.subtotal for item in cart.items.all())
 
-        cart = Cart.objects.filter(
-            user=request.user
-        ).first()
+    if request.method == "POST":
 
-        if not cart or not cart.items.exists():
+        shipping_address = request.POST.get("shipping_address")
 
-            return Response(
-                {
-                    "error": "Your cart is empty."
-                },
-                status=status.HTTP_400_BAD_REQUEST,
+        if not shipping_address:
+            messages.error(request, "Shipping address is required.")
+            return redirect("checkout-page")
+
+        with transaction.atomic():
+
+            order = Order.objects.create(
+                user=request.user,
+                shipping_address=shipping_address,
+                total_price=total,
+                payment_method="COD",
             )
 
-        cart_items = cart.items.select_related("product")
+            for item in cart.items.all():
 
-        total = 0
+                if item.quantity > item.product.stock:
 
-        for item in cart_items:
+                    messages.error(
+                        request,
+                        f"{item.product.name} is out of stock."
+                    )
 
-            if item.quantity > item.product.stock:
+                    return redirect("cart-page")
 
-                return Response(
-                    {
-                        "error": f"{item.product.name} is out of stock."
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
+                OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    price=item.product.price,
+                    quantity=item.quantity,
                 )
 
-            total += item.quantity * item.product.price
+                item.product.stock -= item.quantity
+                item.product.save()
 
-        order = Order.objects.create(
-            user=request.user,
-            shipping_address=serializer.validated_data[
-                "shipping_address"
-            ],
-            payment_method=serializer.validated_data[
-                "payment_method"
-            ],
-            total_price=total,
+            cart.items.all().delete()
+
+        messages.success(
+            request,
+            "Order placed successfully."
         )
 
-        for item in cart_items:
+        return redirect("order-history-page")
 
-            OrderItem.objects.create(
-                order=order,
-                product=item.product,
-                price=item.product.price,
-                quantity=item.quantity,
-            )
+    return render(
+        request,
+        "orders/checkout.html",
+        {
+            "cart": cart,
+            "total": total,
+        },
+    )
 
-            item.product.stock -= item.quantity
-            item.product.save()
 
-        cart_items.delete()
+@login_required
+def order_history(request):
 
-        return Response(
-            OrderSerializer(order).data,
-            status=status.HTTP_201_CREATED,
-        )
+    orders = (
+        Order.objects.filter(user=request.user)
+        .prefetch_related("items__product")
+        .order_by("-created_at")
+    )
 
-class OrderHistoryView(generics.ListAPIView):
-    serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    return render(
+        request,
+        "orders/order_history.html",
+        {
+            "orders": orders,
+        },
+    )
 
-    def get_queryset(self):
-        return (
-            Order.objects.filter(user=self.request.user)
-            .prefetch_related("items__product")
-            .order_by("-created_at")
-        )
-class OrderDetailView(generics.RetrieveAPIView):
-    serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        return (
-            Order.objects.filter(user=self.request.user)
-            .prefetch_related("items__product")
-        )
+@login_required
+def order_detail(request, order_id):
+
+    order = get_object_or_404(
+        Order.objects.prefetch_related("items__product"),
+        id=order_id,
+        user=request.user,
+    )
+
+    return render(
+        request,
+        "orders/order_detail.html",
+        {
+            "order": order,
+        },
+    )

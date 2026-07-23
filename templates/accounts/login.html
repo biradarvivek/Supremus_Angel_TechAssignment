@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Login{% endblock %}
+{% block title %}
+Login
+{% endblock %}
 
 {% block content %}
 
@@ -10,9 +12,9 @@
 
         <div class="card shadow">
 
-            <div class="card-body">
+            <div class="card-body p-4">
 
-                <h3 class="mb-4 text-center">
+                <h3 class="text-center mb-4">
                     Login
                 </h3>
 
@@ -20,13 +22,49 @@
 
                     {% csrf_token %}
 
-                    {{ form.as_p }}
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Username
+                        </label>
+
+                        {{ form.username }}
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Password
+                        </label>
+
+                        {{ form.password }}
+
+                    </div>
 
                     <button class="btn btn-primary w-100">
                         Login
                     </button>
 
                 </form>
+
+                <hr>
+
+                <p class="text-center">
+
+                    Don't have an account?
+
+                    <a href="{% url 'register-page' %}">
+                        Register
+                    </a>
+
+                </p>
 
             </div>
 

@@ -134,7 +134,7 @@ Home
         <div class="d-grid mt-3">
 
             <a
-                href="#"
+                href="{% url 'product-detail' product.id %}"
                 class="btn btn-primary"
             >
                 View Details
@@ -155,8 +155,6 @@ Home
 {% endfor %}
 
 </div>
-
-{% endblock %}
 
 <section class="my-5">
 
@@ -213,3 +211,6 @@ We're always here to help you.
 </div>
 
 </section>
+
+{% endblock %}
+
